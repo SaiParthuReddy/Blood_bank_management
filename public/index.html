@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parthu Reddy’s Blood Bank | Life-Saving Blood Management System</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="#dashboard" class="brand-wrapper" onclick="navigate('dashboard')">
+        <div class="brand-icon">
+          <i class="fa-solid fa-droplet"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Parthu Reddy’s</h1>
+          <span>Blood Bank Management</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links" id="navLinks">
+        <li class="nav-item">
+          <a href="#dashboard" class="nav-link active" data-tab="dashboard">
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#donors" class="nav-link" data-tab="donors">
+            <i class="fa-solid fa-users"></i> Donors
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#stock" class="nav-link" data-tab="stock">
+            <i class="fa-solid fa-boxes-stacked"></i> Blood Stock
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#low-stock" class="nav-link" data-tab="low-stock">
+            <i class="fa-solid fa-triangle-exclamation"></i> Low Stock
+            <span class="blood-badge blood-badge-crimson" id="lowStockBadge" style="display:none; height:18px; font-size:10px; margin-left:4px;">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#requests" class="nav-link" data-tab="requests">
+            <i class="fa-solid fa-hospital-user"></i> Hospital Requests
+          </a>
+        </li>
+      </ul>
+
+      <!-- Right Actions: DB Indicator & Mobile Toggle -->
+      <div class="nav-actions">
+        <div class="db-status-pill" id="dbStatusPill" onclick="openDbModal()" title="Click to view MySQL connection info">
+          <div class="db-indicator-dot" id="dbDot"></div>
+          <span id="dbText">Checking DB...</span>
+        </div>
+
+        <button class="btn-mobile-toggle" id="mobileToggleBtn" aria-label="Toggle navigation menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="heroSection">
+    <!-- Unsplash high quality medical backdrop with graceful fallback -->
+    <img src="https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&w=1200&q=80"
+         alt="Blood Donation Facility" 
+         class="hero-overlay-img"
+         onerror="this.style.display='none'">
+    <div class="hero-backdrop-gradient"></div>
+
+    <div class="container hero-content">
+      <div class="hero-badge">
+        <i class="fa-solid fa-shield-heart"></i> Verified Medical Donor Network
+      </div>
+      <h2 class="hero-title">
+        Every Drop Counts.<br>
+        Save Lives with <span>Parthu Reddy’s Blood Bank</span>.
+      </h2>
+      <p class="hero-description">
+        State-of-the-art blood bank inventory, real-time donor directory, urgent hospital supply dispatch, and automated critical reserve alerts powered by MySQL.
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openAddDonorModal()">
+          <i class="fa-solid fa-user-plus"></i> Register New Donor
+        </button>
+        <button class="btn btn-secondary" onclick="openCreateRequestModal()">
+          <i class="fa-solid fa-truck-medical"></i> Request Blood Units
+        </button>
+        <button class="btn btn-light" onclick="navigate('stock')">
+          <i class="fa-solid fa-boxes-stacked"></i> Check Inventory
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="container" style="padding-bottom: 48px;">
+
+    <!-- Urgent Alert Banner (shown only if critical/low stock exists) -->
+    <div id="urgentAlertBox" class="alert-banner alert-banner-danger" style="display: none;">
+      <div class="alert-content">
+        <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+        <div>
+          <strong>Urgent Inventory Alert:</strong>
+          <span id="urgentAlertText">Some blood groups are running critically low on units.</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-navy" onclick="navigate('low-stock')">Review Low Stock</button>
+    </div>
+
+    <!-- Live Metrics Counter Bar -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-info">
+          <h3>Registered Donors</h3>
+          <div class="metric-value" id="statDonors">0</div>
+          <div class="metric-sub">Active community donors</div>
+        </div>
+        <div class="metric-icon-wrap metric-icon-crimson">
+          <i class="fa-solid fa-hand-holding-droplet"></i>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-info">
+          <h3>Available Blood Units</h3>
+          <div class="metric-value" id="statUnits">0</div>
+          <div class="metric-sub">Across 8 blood groups</div>
+        </div>
+        <div class="metric-icon-wrap metric-icon-blue">
+          <i class="fa-solid fa-bottle-droplet"></i>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-info">
+          <h3>Hospital Requests</h3>
+          <div class="metric-value" id="statRequests">0</div>
+          <div class="metric-sub"><span id="statPendingReqs">0</span> awaiting fulfillment</div>
+        </div>
+        <div class="metric-icon-wrap metric-icon-navy">
+          <i class="fa-solid fa-hospital"></i>
+        </div>
+      </div>
+
+      <div class="metric-card" id="metricLowStockCard">
+        <div class="metric-info">
+          <h3>Low Stock Alerts</h3>
+          <div class="metric-value" id="statLowStock">0</div>
+          <div class="metric-sub">Groups below 10 units</div>
+        </div>
+        <div class="metric-icon-wrap metric-icon-amber">
+          <i class="fa-solid fa-bell"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         VIEW 1: DASHBOARD
+         =================================================================== -->
+    <section class="view-section active" id="view-dashboard">
+      <!-- Blood Stock Quick Glance -->
+      <div class="panel-card">
+        <div class="panel-header-visual">
+          <img src="https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=600&q=80" 
+               alt="Blood Stock Storage" class="panel-header-img" onerror="this.style.display='none'">
+          <div class="panel-header-text">
+            <h2><i class="fa-solid fa-cubes"></i> Blood Inventory Overview</h2>
+            <p>Live inventory counts for all standard blood groups from MySQL database</p>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn btn-sm btn-light" onclick="openAddStockModal()">
+              <i class="fa-solid fa-plus"></i> Add Blood Units
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="navigate('stock')">
+              Manage All <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="blood-stock-grid" id="dashboardStockGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Two-column Recent Donors & Recent Hospital Requests -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
+        <!-- Recent Donors -->
+        <div class="panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3 style="font-size:16px; font-weight:700; color:var(--navy-900);">
+              <i class="fa-solid fa-user-check" style="color:var(--crimson-600); margin-right:8px;"></i>
+              Recent Registered Donors
+            </h3>
+            <button class="btn btn-sm btn-light" onclick="navigate('donors')">View All</button>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Donor</th>
+                  <th>Blood Group</th>
+                  <th>Phone</th>
+                  <th>Age</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardRecentDonors">
+                <tr><td colspan="4" style="text-align:center; color:#94a3b8;">Loading donors...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3 style="font-size:16px; font-weight:700; color:var(--navy-900);">
+              <i class="fa-solid fa-truck-medical" style="color:var(--blue-600); margin-right:8px;"></i>
+              Recent Hospital Demands
+            </h3>
+            <button class="btn btn-sm btn-light" onclick="navigate('requests')">View All</button>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Hospital</th>
+                  <th>Group</th>
+                  <th>Units</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardRecentRequests">
+                <tr><td colspan="4" style="text-align:center; color:#94a3b8;">Loading requests...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 2: DONORS HUB (View, Search, Add, Update, Delete)
+         =================================================================== -->
+    <section class="view-section" id="view-donors">
+      <div class="panel-card">
+        <div class="panel-header-visual">
+          <img src="https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80" 
+               alt="Blood Donors" class="panel-header-img" onerror="this.style.display='none'">
+          <div class="panel-header-text">
+            <h2><i class="fa-solid fa-users"></i> Donors Directory</h2>
+            <p>Manage, search, register, update, and remove volunteer blood donors</p>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn btn-primary" onclick="openAddDonorModal()">
+              <i class="fa-solid fa-user-plus"></i> Add New Donor
+            </button>
+          </div>
+        </div>
+
+        <!-- Search & Filter Toolbar -->
+        <div class="table-toolbar">
+          <div class="search-box-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="donorSearchInput" class="search-input" 
+                   placeholder="Search donor by name or phone..." 
+                   oninput="onDonorSearch()">
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items:center;">
+            <select id="donorGroupFilter" class="filter-select" onchange="onDonorSearch()">
+              <option value="">All Blood Groups</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+
+            <button class="btn btn-light" onclick="resetDonorFilters()" title="Reset Filters">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Donors Table -->
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Blood Group</th>
+                <th>Contact Phone</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="donorsTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 3: BLOOD STOCK MANAGEMENT
+         =================================================================== -->
+    <section class="view-section" id="view-stock">
+      <div class="panel-card">
+        <div class="panel-header-visual">
+          <img src="https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=600&q=80" 
+               alt="Blood Stock Laboratory" class="panel-header-img" onerror="this.style.display='none'">
+          <div class="panel-header-text">
+            <h2><i class="fa-solid fa-boxes-stacked"></i> Blood Stock Inventory</h2>
+            <p>Maintain blood reserve levels, update available units, and monitor expiration dates</p>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn btn-primary" onclick="openAddStockModal()">
+              <i class="fa-solid fa-plus-circle"></i> Add / Increment Units
+            </button>
+          </div>
+        </div>
+
+        <!-- Blood Stock Cards Grid -->
+        <div class="blood-stock-grid" id="allStockGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Blood Stock Table -->
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:14px; color:var(--navy-900);">
+          Detailed Inventory Records
+        </h3>
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Stock ID</th>
+                <th>Blood Group</th>
+                <th>Units Available</th>
+                <th>Inventory Status</th>
+                <th>Last Updated</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="stockTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 4: LOW BLOOD STOCK ALERTS
+         =================================================================== -->
+    <section class="view-section" id="view-low-stock">
+      <div class="panel-card">
+        <div class="panel-header-visual" style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);">
+          <img src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=600&q=80" 
+               alt="Critical Medical Emergency" class="panel-header-img" onerror="this.style.display='none'">
+          <div class="panel-header-text">
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> Low Blood Stock Alerts</h2>
+            <p>Immediate awareness for blood groups with less than 10 units available (Critical threshold: < 5 units)</p>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn btn-light" onclick="openAddStockModal()">
+              <i class="fa-solid fa-droplet"></i> Replenish Stock Now
+            </button>
+          </div>
+        </div>
+
+        <div id="lowStockAlertContainer">
+          <!-- Populated by JS: Cards & Warnings -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 5: HOSPITAL BLOOD REQUESTS
+         =================================================================== -->
+    <section class="view-section" id="view-requests">
+      <div class="panel-card">
+        <div class="panel-header-visual">
+          <img src="https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80" 
+               alt="Hospital Logistics" class="panel-header-img" onerror="this.style.display='none'">
+          <div class="panel-header-text">
+            <h2><i class="fa-solid fa-hospital-user"></i> Hospital Blood Requests</h2>
+            <p>Track urgent hospital requests, approve shipments, and manage fulfillment workflow</p>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn btn-primary" onclick="openCreateRequestModal()">
+              <i class="fa-solid fa-plus-circle"></i> Create Blood Request
+            </button>
+          </div>
+        </div>
+
+        <!-- Requests Toolbar -->
+        <div class="table-toolbar">
+          <div class="search-box-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="requestSearchInput" class="search-input" 
+                   placeholder="Search by hospital name..." 
+                   oninput="onRequestSearch()">
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items:center;">
+            <select id="requestStatusFilter" class="filter-select" onchange="onRequestSearch()">
+              <option value="">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Fulfilled">Fulfilled</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+
+            <select id="requestGroupFilter" class="filter-select" onchange="onRequestSearch()">
+              <option value="">All Groups</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+
+            <button class="btn btn-light" onclick="resetRequestFilters()" title="Reset Filters">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Requests Table -->
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Req ID</th>
+                <th>Hospital Name</th>
+                <th>Blood Group</th>
+                <th>Units Required</th>
+                <th>Request Date</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================
+       MODAL 1: ADD DONOR MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalAddDonor">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus" style="color:var(--crimson-600); margin-right:8px;"></i> Register Blood Donor</h3>
+        <button class="modal-close" onclick="closeModal('modalAddDonor')">&times;</button>
+      </div>
+      <form id="formAddDonor" onsubmit="submitAddDonor(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Full Name <span style="color:var(--crimson-600)">*</span></label>
+              <input type="text" id="addDonorName" class="form-control" placeholder="e.g. Rahul Sharma" required maxlength="100">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Age (18 - 65) <span style="color:var(--crimson-600)">*</span></label>
+              <input type="number" id="addDonorAge" class="form-control" placeholder="e.g. 28" min="18" max="65" required>
+              <span class="form-help">Must be between 18 and 65 years.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Gender <span style="color:var(--crimson-600)">*</span></label>
+              <select id="addDonorGender" class="form-control" required>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Blood Group <span style="color:var(--crimson-600)">*</span></label>
+              <div class="blood-selector-group">
+                <label>
+                  <input type="radio" name="addDonorBlood" value="A+" class="blood-radio-input" required>
+                  <span class="blood-radio-label">A+</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="A-" class="blood-radio-input">
+                  <span class="blood-radio-label">A-</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="B+" class="blood-radio-input">
+                  <span class="blood-radio-label">B+</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="B-" class="blood-radio-input">
+                  <span class="blood-radio-label">B-</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="AB+" class="blood-radio-input">
+                  <span class="blood-radio-label">AB+</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="AB-" class="blood-radio-input">
+                  <span class="blood-radio-label">AB-</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="O+" class="blood-radio-input" checked>
+                  <span class="blood-radio-label">O+</span>
+                </label>
+                <label>
+                  <input type="radio" name="addDonorBlood" value="O-" class="blood-radio-input">
+                  <span class="blood-radio-label">O-</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Contact Phone Number <span style="color:var(--crimson-600)">*</span></label>
+              <input type="tel" id="addDonorPhone" class="form-control" placeholder="e.g. 9876543210" required minlength="10" maxlength="15">
+              <span class="form-help">10-15 digits standard phone format.</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalAddDonor')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitAddDonor">Save Donor Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 2: EDIT / UPDATE DONOR MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalEditDonor">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-pen" style="color:var(--blue-600); margin-right:8px;"></i> Update Donor Record</h3>
+        <button class="modal-close" onclick="closeModal('modalEditDonor')">&times;</button>
+      </div>
+      <form id="formEditDonor" onsubmit="submitEditDonor(event)">
+        <input type="hidden" id="editDonorId">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Full Name <span style="color:var(--crimson-600)">*</span></label>
+              <input type="text" id="editDonorName" class="form-control" required maxlength="100">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Age (18 - 65) <span style="color:var(--crimson-600)">*</span></label>
+              <input type="number" id="editDonorAge" class="form-control" min="18" max="65" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Gender <span style="color:var(--crimson-600)">*</span></label>
+              <select id="editDonorGender" class="form-control" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Blood Group <span style="color:var(--crimson-600)">*</span></label>
+              <select id="editDonorBlood" class="form-control" required>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Contact Phone Number <span style="color:var(--crimson-600)">*</span></label>
+              <input type="tel" id="editDonorPhone" class="form-control" required minlength="10" maxlength="15">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalEditDonor')">Cancel</button>
+          <button type="submit" class="btn btn-navy" id="btnSubmitEditDonor">Update Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 3: UPDATE STOCK UNITS MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalUpdateUnits">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color:var(--crimson-600); margin-right:8px;"></i> Update Available Units</h3>
+        <button class="modal-close" onclick="closeModal('modalUpdateUnits')">&times;</button>
+      </div>
+      <form id="formUpdateUnits" onsubmit="submitUpdateUnits(event)">
+        <input type="hidden" id="updateStockId">
+        <div class="modal-body">
+          <p style="font-size:14px; color:var(--text-muted); margin-bottom:16px;">
+            Set the current inventory level for Blood Group: <strong id="updateStockGroupText" style="color:var(--crimson-600);"></strong>.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Available Blood Units <span style="color:var(--crimson-600)">*</span></label>
+            <input type="number" id="updateStockUnitsInput" class="form-control" min="0" required placeholder="0">
+            <span class="form-help">Values below 10 trigger low-stock alerts. Values below 5 trigger critical warnings.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalUpdateUnits')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 4: ADD / INCREMENT BLOOD STOCK MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalAddStock">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-boxes-packing" style="color:var(--crimson-600); margin-right:8px;"></i> Add Blood Stock</h3>
+        <button class="modal-close" onclick="closeModal('modalAddStock')">&times;</button>
+      </div>
+      <form id="formAddStock" onsubmit="submitAddStock(event)">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">Select Blood Group <span style="color:var(--crimson-600)">*</span></label>
+            <select id="addStockGroup" class="form-control" required>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Units to Add <span style="color:var(--crimson-600)">*</span></label>
+            <input type="number" id="addStockUnits" class="form-control" min="1" value="5" required>
+            <span class="form-help">Number of fresh tested blood units to increment into current stock.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalAddStock')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Units to Inventory</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 5: CREATE BLOOD REQUEST MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalCreateRequest">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-medical" style="color:var(--blue-600); margin-right:8px;"></i> Create Hospital Blood Request</h3>
+        <button class="modal-close" onclick="closeModal('modalCreateRequest')">&times;</button>
+      </div>
+      <form id="formCreateRequest" onsubmit="submitCreateRequest(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Hospital / Healthcare Facility <span style="color:var(--crimson-600)">*</span></label>
+              <input type="text" id="reqHospitalName" class="form-control" placeholder="e.g. Apollo Super Speciality Hospital" required maxlength="150">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Blood Group Required <span style="color:var(--crimson-600)">*</span></label>
+              <select id="reqBloodGroup" class="form-control" required>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Units Required <span style="color:var(--crimson-600)">*</span></label>
+              <input type="number" id="reqUnits" class="form-control" min="1" value="2" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Request Date <span style="color:var(--crimson-600)">*</span></label>
+              <input type="date" id="reqDate" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Initial Status <span style="color:var(--crimson-600)">*</span></label>
+              <select id="reqStatus" class="form-control" required>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Fulfilled">Fulfilled</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalCreateRequest')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Blood Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 6: UPDATE REQUEST STATUS MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalRequestStatus">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-arrows-rotate" style="color:var(--blue-600); margin-right:8px;"></i> Update Request Status</h3>
+        <button class="modal-close" onclick="closeModal('modalRequestStatus')">&times;</button>
+      </div>
+      <form id="formRequestStatus" onsubmit="submitUpdateRequestStatus(event)">
+        <input type="hidden" id="statusRequestId">
+        <div class="modal-body">
+          <p style="font-size:14px; color:var(--text-muted); margin-bottom:14px;">
+            Request ID: <strong id="statusReqIdText"></strong> for <strong id="statusHospitalText"></strong> (<span id="statusReqGroupText"></span> - <span id="statusReqUnitsText"></span> units)
+          </p>
+          <div class="form-group">
+            <label class="form-label">Select New Status</label>
+            <select id="statusSelectInput" class="form-control" required>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Fulfilled">Fulfilled</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <span class="form-help">Marking as 'Fulfilled' automatically deducts the requested units from live inventory if sufficient stock is present.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modalRequestStatus')">Cancel</button>
+          <button type="submit" class="btn btn-navy">Save Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 7: CONFIRMATION MODAL (FOR DELETE)
+       =================================================================== -->
+  <div class="modal-overlay" id="modalConfirm">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header" style="background:#fef2f2;">
+        <h3 style="color:var(--crimson-700);">
+          <i class="fa-solid fa-triangle-exclamation" style="margin-right:8px;"></i> Confirm Deletion
+        </h3>
+        <button class="modal-close" onclick="closeModal('modalConfirm')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalText" style="font-size:14px; color:var(--navy-800); line-height:1.6;"></p>
+        <p style="font-size:12px; color:var(--text-light); margin-top:8px;">This action permanently removes the record from the MySQL database and cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="closeModal('modalConfirm')">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmAction" style="background:var(--crimson-600);">Yes, Delete Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MODAL 8: MYSQL CONNECTION STATUS DETAILS MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="modalDbInfo">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-database" style="color:var(--blue-600); margin-right:8px;"></i> MySQL Database Status</h3>
+        <button class="modal-close" onclick="closeModal('modalDbInfo')">&times;</button>
+      </div>
+      <div class="modal-body" id="dbModalBody">
+        <!-- Filled by JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="checkHealth(); closeModal('modalDbInfo');">Recheck Connection</button>
+        <button type="button" class="btn btn-navy" onclick="closeModal('modalDbInfo')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-shield-heart" style="color:var(--crimson-600);"></i>
+        <span>&copy; 2026 <strong>Parthu Reddy’s Blood Bank</strong>. All Rights Reserved.</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span>Connected to MySQL Database: <code id="footerDbName">parthu_blood_bank</code></span>
+        <span style="display:inline-block; width:1px; height:12px; background:var(--border);"></span>
+        <span>Standard Blood Groups: 8 Verified</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Client Application Script -->
+  <script src="js/app.js"></script>
+</body>
+</html>
